@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract BrokeToRich is ERC20, Ownable {
+    uint256 public taxRate = 2; // 2% tax
+    address public taxWallet;
+
+    constructor() ERC20("BrokeToRich", "BTR") {
+        _mint(msg.sender, 200_000_000 * 10 ** decimals());
+        taxWallet = msg.sender;
+    }
+
+    function _transfer(address from, address to, uint256 amount) internal override {
+        if (from == owner() || to == owner()) {
+            super._transfer(from, to, amount);
+        } else {
+            uint256 tax = amount * taxRate / 100;
+            uint256 remaining = amount - tax;
+            super._transfer(from, taxWallet, tax);
+            super._transfer(from, to, remaining);
+        }
+    }
+
+    function updateTaxRate(uint256 newRate) external onlyOwner {
+        require(newRate <= 10, "Too high");
+        taxRate = newRate;
+    }
+
+    function removeTax() external onlyOwner {
+        taxRate = 0;
+    }
+}
